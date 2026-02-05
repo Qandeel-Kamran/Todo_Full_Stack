@@ -36,18 +36,58 @@ The application consists of:
 ### 2. Deploy Frontend to Vercel
 
 1. Go to [Vercel](https://vercel.com/) and sign in
-2. Click "New Project" and connect to your GitHub repository (`Qandeel-Kamran/Todo_Full_Stack`)
-3. Set Root Directory to `frontend`
-4. Framework: Next.js
-5. Build Command: `npm run build`
-6. Output Directory: `frontend/.next`
-7. Install Command: `cd frontend && npm install`
-8. Environment Variables:
+2. Click "Add New..." and select "Project"
+3. Import your Git Repository (`Qandeel-Kamran/Todo_Full_Stack`)
+4. On the "Configure Project" screen:
+   - **FRAMEWORK PRESET**: Select "Next.js"
+   - **ROOT DIRECTORY**: Set to `frontend`
+5. Click "Deploy"
+6. After deployment, go to your project settings
+7. Go to "Environment Variables" and add:
    ```
    NEXT_PUBLIC_API_URL=https://your-backend-url.onrender.com
    NEXT_PUBLIC_BETTER_AUTH_URL=https://your-backend-url.onrender.com
    NEXT_PUBLIC_BETTER_AUTH_CLIENT_KEY=8ynz1eQ4KYV7qaInTW0kZURMi60458Ce
    ```
+8. Redeploy after adding environment variables
+
+### 3. Vercel 404 Error Resolution
+
+If you're encountering a 404 error on Vercel, try these steps:
+
+#### Issue: Project not found or incorrect directory
+- **Solution**: Ensure you set the Root Directory to `frontend` during project setup
+- **Verification**: Check that your project is pointing to the correct subdirectory
+
+#### Issue: Build failure
+- **Solution**: Make sure your package.json has proper build script:
+  ```json
+  {
+    "scripts": {
+      "build": "next build"
+    }
+  }
+  ```
+
+#### Issue: Environment variables not set
+- **Solution**: Verify that all required environment variables are set in Vercel dashboard:
+  - NEXT_PUBLIC_API_URL
+  - NEXT_PUBLIC_BETTER_AUTH_URL
+  - NEXT_PUBLIC_BETTER_AUTH_CLIENT_KEY
+
+#### Issue: Incorrect API URL
+- **Solution**: Ensure NEXT_PUBLIC_API_URL points to your deployed backend (e.g., https://your-app.onrender.com)
+
+#### Issue: Deployment stuck
+- **Solution**:
+  1. Go to your Vercel dashboard
+  2. Select your project
+  3. Go to Settings → Git
+  4. Click "Resync" to reconnect with GitHub
+  5. Trigger a new deployment from the "Deployments" tab
+
+#### Issue: Static export vs SSR
+- **Solution**: Make sure your Next.js app is configured for deployment with proper API routes
 
 ## Environment Configuration
 
