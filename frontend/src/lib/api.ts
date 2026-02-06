@@ -1,20 +1,17 @@
 import axios from 'axios';
-import { getCurrentAuthSession, signIn as betterSignIn, signOut as betterSignOut, signUp } from '@/lib/auth'; // Better Auth integration
 import { BetterAuthClient } from './betterAuth';
 
 // Create a client instance to access tokens
 const authClient = new BetterAuthClient();
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-// Create axios instance with default config
+// Create axios instance with default config for Vercel functions
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '/', // Using relative paths for Vercel functions
 });
 
-// Add auth token to requests if available using Better Auth
+// Add auth token to requests if available from Better Auth
 api.interceptors.request.use(
-  async (config) => {
+  (config) => {
     const token = authClient.getToken(); // Get token directly from localStorage
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -32,7 +29,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Sign out user and redirect to login if unauthorized
-      betterSignOut({ redirectTo: '/' });
+      authClient.signOut({ callbackURL: '/login' });
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -44,29 +41,29 @@ export default api;
 // Better Auth API functions
 export const authAPI = {
   register: async (email: string, password: string) => {
-    const response = await signUp(
+    const response = await authClient.signUp({
       email,
       password,
-      { redirectTo: '/' }
-    );
+      callbackURL: '/'
+    });
     return response;
   },
 
   login: async (email: string, password: string) => {
-    const response = await betterSignIn('credentials', {
+    const response = await authClient.signIn({
       email,
       password,
-      redirectTo: '/',
+      callbackURL: '/'
     });
     return response;
   },
 
   logout: async () => {
-    await betterSignOut({ redirectTo: '/login' });
+    await authClient.signOut({ callbackURL: '/login' });
   },
 
   getCurrentUser: async () => {
-    const session = await getCurrentAuthSession();
+    const session = await authClient.getSession();
     if (!session) {
       throw new Error('No active session');
     }

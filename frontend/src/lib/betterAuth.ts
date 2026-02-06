@@ -61,7 +61,20 @@ export class BetterAuthClient {
   private clientKey?: string;
 
   constructor(config?: BetterAuthConfig) {
-    this.baseURL = config?.baseURL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:8000';
+    // Determine the base URL based on environment
+    if (typeof window !== 'undefined') {
+      // Client-side: use NEXT_PUBLIC_BETTER_AUTH_URL or construct from window.location
+      this.baseURL = config?.baseURL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+                    (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : 'http://localhost:8000');
+    } else {
+      // Server-side: use VERCEL_URL for production or fallback to localhost
+      const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+                     process.env.NEXT_PUBLIC_VERCEL_URL ?
+                     `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` :
+                     'http://localhost:8000';
+      this.baseURL = config?.baseURL || baseUrl;
+    }
+
     this.clientKey = config?.clientKey || process.env.NEXT_PUBLIC_BETTER_AUTH_CLIENT_KEY;
   }
 
@@ -181,15 +194,37 @@ export class BetterAuthClient {
     }
   }
 
-  // Simulate Better Auth sign out
-  async signOut(callbackURL?: string): Promise<void> {
+  // Better Auth sign out
+  async signOut(options: { callbackURL?: string } = {}): Promise<void> {
+    const { callbackURL = '/login' } = options;
+
     try {
       // Remove token from localStorage
-      localStorage.removeItem('better-auth-token');
+      localStorage.removeItem('better-auth-access-token');
+
+      // Optionally call backend logout endpoint
+      const token = this.getToken();
+      if (token) {
+        await fetch(`${this.baseURL}/api/auth/logout`, {
+          method: 'POST',
+          headers: this.getHeaders(true, token),
+          body: JSON.stringify({
+            callbackURL
+          })
+        }).catch(() => {
+          // Ignore logout errors but still remove local token
+        });
+      }
+
+      // Remove token again in case it was re-added during request
+      localStorage.removeItem('better-auth-access-token');
+
+      // Redirect to callback URL
+      window.location.href = callbackURL;
     } catch (error) {
       console.error('Sign out error:', error);
-      // Still remove the token locally even if the server request fails
-      localStorage.removeItem('better-auth-token');
+      // Still remove the token even if there's an error
+      localStorage.removeItem('better-auth-access-token');
       throw error;
     }
   }
@@ -197,7 +232,7 @@ export class BetterAuthClient {
   // Get session from backend API - this is the real call to backend
   async getSession(): Promise<SessionResponse | null> {
     try {
-      const token = localStorage.getItem('better-auth-token');
+      const token = this.getToken(); // Use the consistent token getter method
       if (!token) {
         return null;
       }
@@ -228,18 +263,23 @@ export class BetterAuthClient {
     } catch (error) {
       console.error('Get session error:', error);
       // If session is invalid, remove the token
-      localStorage.removeItem('better-auth-token');
+      this.clearToken(); // Use consistent token clearing method
       return null;
     }
   }
 
   // Helper method to store token in localStorage
   storeToken(token: string): void {
-    localStorage.setItem('better-auth-token', token);
+    localStorage.setItem('better-auth-access-token', token);
   }
 
   // Helper method to get token from localStorage
   getToken(): string | null {
-    return localStorage.getItem('better-auth-token');
+    return localStorage.getItem('better-auth-access-token');
+  }
+
+  // Helper method to clear token from localStorage
+  clearToken(): void {
+    localStorage.removeItem('better-auth-access-token');
   }
 }
