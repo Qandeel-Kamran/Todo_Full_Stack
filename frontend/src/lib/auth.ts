@@ -103,7 +103,7 @@ export const signOut = async (options: { redirectTo?: string } = {}): Promise<vo
 
   try {
     // Use Better Auth client to sign out
-    await authClient.signOut(redirectTo);
+    await authClient.signOut({ callbackURL: redirectTo });
   } catch (error) {
     console.error('Sign out error:', error);
   }
