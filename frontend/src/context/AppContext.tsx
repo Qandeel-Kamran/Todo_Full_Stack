@@ -109,12 +109,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setError(null);
       const response = await authAPI.login(email, password);
 
-      if (response.ok) {
-        setIsLoggedIn(true);
-        await loadUserData();
-      } else {
-        throw new Error(response.error || 'Login failed');
-      }
+      // If we reach this point, login was successful
+      // The authClient.signIn method throws an error on failure
+      setIsLoggedIn(true);
+      await loadUserData();
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Login failed');
